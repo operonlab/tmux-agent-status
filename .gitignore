@@ -1,0 +1,8 @@
+# Editor / OS cruft
+.DS_Store
+*.swp
+*~
+
+# Nothing runtime lives in the repo — the status cache and refresh lock are
+# written under ${TMUX_TMPDIR:-/tmp}/tmux-agent-status-<uid>/, never here.
+# Test builds (the compiled fake agent binary) live in a mktemp dir, never here.

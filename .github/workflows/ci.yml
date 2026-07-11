@@ -1,0 +1,57 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  shellcheck:
+    name: shellcheck (-S warning)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install shellcheck
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+      - name: Lint all shell files
+        run: |
+          shellcheck -S warning \
+            agent-status.tmux \
+            scripts/helpers.sh \
+            scripts/status.sh \
+            scripts/teardown.sh \
+            test/classify.sh \
+            test/smoke.sh
+
+  classify:
+    name: classify.awk unit test (platform-neutral)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      # classify.awk is pure byte-wise awk (LC_ALL=C) content matching, so its
+      # three-state logic is identical on Linux and macOS and is worth a real
+      # run on the cheap Linux runner. The tmux integration + local pane scan is
+      # macOS-primary and covered by the smoke-macos job below.
+      - name: Run classifier unit test
+        run: bash test/classify.sh
+
+  smoke-macos:
+    name: functional smoke (real tmux, macOS-primary)
+    runs-on: macos-latest
+    env:
+      # macOS CI runners are shared; widen the non-blocking budget so runner
+      # jitter never masquerades as a blocking status call. The plugin only ever
+      # reads a cache in the foreground, so this still proves the contract.
+      SMOKE_MAX_MS: "500"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install tmux
+        run: brew install tmux
+      - name: Show tmux version
+        run: tmux -V
+      # Builds a real pane whose pane_current_command reads `claude` (a tiny
+      # locally-compiled binary — cc ships on the runner), drives the local
+      # scan, the provider path, ascii icons, the empty-capsule collapse, and
+      # the interpolate/teardown round-trip, all on a private `tmux -L` socket.
+      - name: Run smoke suite
+        run: bash test/smoke.sh

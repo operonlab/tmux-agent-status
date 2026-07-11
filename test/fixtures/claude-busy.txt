@@ -1,0 +1,5 @@
+● Analyzing the codebase
+
+  Reading src/main.rs
+
+✳ Cooking… (12s · esc to interrupt)

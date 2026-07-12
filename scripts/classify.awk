@@ -83,7 +83,7 @@ function generic_rules(){if(braille_prefix(TITLE))return "BUSY";return ""}
 function generic_agent_rules(){if(braille_prefix(TITLE))return "BUSY";if(star_idle(TITLE))return "IDLE";return ""}
 BEGIN{
   RULE="\342\224\200";ARROW="\342\235\257";BAR="\342\224\202"
-  split("claude claude-code codex gemini aider cursor cursor-agent agy copilot opencode amp droid qwen kimi hermes pi",TMP," ")
+  split("claude claude-code codex gemini aider cursor cursor-agent agy copilot opencode amp droid qwen kimi hermes pi grok",TMP," ")
   for(k in TMP)AG[TMP[k]]=1
 }
 {lines[NR]=$0}
@@ -95,7 +95,7 @@ END{
   BOTTOMWORK=(region_has(B5,n,"esc to interrupt")||has_spinner(jointext(B5,n)))
   find_box()
   if(CMD=="node"||CMD=="bun"||CMD=="deno"){print generic_rules();exit}
-  isagent=(CMD in AG)||(CMD ~ /^[0-9]+\.[0-9]+\.[0-9]+/)||(CMD ~ /^codex-/)
+  isagent=(CMD in AG)||(CMD ~ /^[0-9]+\.[0-9]+\.[0-9]+/)||(CMD ~ /^codex-/)||(CMD ~ /^grok-/)
   if(!isagent){print "";exit}
   if(CMD=="codex"||CMD ~ /^codex-/){print codex_rules();exit}
   if(CMD=="claude"||CMD=="claude-code"||CMD ~ /^[0-9]+\.[0-9]+\.[0-9]+/){print claude_rules();exit}

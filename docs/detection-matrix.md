@@ -27,7 +27,7 @@ lines). The command name selects which rule set runs:
 | --- | --- | --- |
 | `claude`, `claude-code`, or a bare `X.Y.Z` version string | Claude rules | Yes (footer) |
 | `codex`, `codex-*` (e.g. `codex-aarch64-…`) | Codex rules | Yes (footer) |
-| `gemini`, `aider`, `cursor`, `cursor-agent`, `agy`, `copilot`, `opencode`, `amp`, `droid`, `qwen`, `kimi`, `hermes`, `pi` | Generic-agent rules | No — OSC title only |
+| `gemini`, `aider`, `cursor`, `cursor-agent`, `agy`, `copilot`, `opencode`, `amp`, `droid`, `qwen`, `kimi`, `hermes`, `pi`, `grok`, `grok-*` | Generic-agent rules | No — OSC title only |
 | `node`, `bun`, `deno` | Host-runtime rules | **No** — OSC title only |
 | anything else | *(ignored — never counted)* | No |
 
@@ -65,7 +65,7 @@ sets) is the architectural fix for that false-positive class.
 | Bottom lines contain `esc to interrupt` or a braille spinner | busy |
 | none of the above | *(no state — not counted)* |
 
-### Generic-agent rules (`gemini`, `aider`, `cursor`, `agy`, `copilot`, `opencode`, `amp`, `droid`, `qwen`, `kimi`, `hermes`, `pi`, …)
+### Generic-agent rules (`gemini`, `aider`, `cursor`, `agy`, `copilot`, `opencode`, `amp`, `droid`, `qwen`, `kimi`, `hermes`, `pi`, `grok`, `grok-*`, …)
 
 | Title signal | State |
 | --- | --- |

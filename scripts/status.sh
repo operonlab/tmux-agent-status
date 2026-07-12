@@ -69,7 +69,7 @@ local_scan() {
 				# host runtime: trust the OSC title only, never capture screen
 				# text (a dev server's log must not light the agent capsule).
 				text='' ;;
-			claude|claude-code|codex|codex-*|gemini|aider|cursor|cursor-agent|agy|copilot|opencode|amp|droid|qwen|kimi|hermes|pi|[0-9]*.[0-9]*.[0-9]*)
+			claude|claude-code|codex|codex-*|gemini|aider|cursor|cursor-agent|agy|copilot|opencode|amp|droid|qwen|kimi|hermes|pi|grok|grok-*|[0-9]*.[0-9]*.[0-9]*)
 				text=$("$TMUX_BIN" capture-pane -p -t "$pid" 2>/dev/null | /usr/bin/tail -30) ;;
 			*) continue ;;
 		esac

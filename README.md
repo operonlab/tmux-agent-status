@@ -41,6 +41,12 @@ Put the placeholder `#{agent_status}` anywhere in your `status-left` or
 
 ### Option A — with [TPM](https://github.com/tmux-plugins/tpm) (recommended)
 
+First time using TPM? Install it once:
+
+```sh
+git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
+```
+
 Add these two lines to `~/.tmux.conf`:
 
 ```tmux
@@ -104,6 +110,13 @@ Set any of these in `~/.tmux.conf` **before** the plugin loads.
 set -g @agent-status-icons 'ascii'
 set -g @agent-status-interval '3'
 ```
+
+`@agent-status-interval` is not tmux's native `status-interval`. tmux's
+`status-interval` controls how often the status line redraws (and thus how often
+this capsule is re-read); `@agent-status-interval` only throttles the background
+pane scan that refreshes the cache. Net effect: the capsule updates no faster
+than `status-interval`, and re-scans the panes at most once per
+`@agent-status-interval`.
 
 ### `@agent-status-provider` (runs a command you supply)
 

@@ -32,6 +32,12 @@ Gemini、Aider 等）正在你的 pane 裡跑，以及哪一個正在等你。
 
 ### 方式 A —— 使用 [TPM](https://github.com/tmux-plugins/tpm)（推薦）
 
+第一次用 TPM？先安裝一次：
+
+```sh
+git clone https://github.com/tmux-plugins/tpm ~/.tmux/plugins/tpm
+```
+
 在 `~/.tmux.conf` 加入這兩行：
 
 ```tmux
@@ -88,6 +94,11 @@ tmux source-file ~/.tmux.conf
 | `@agent-status-interval` | `5` | 快取視為過期、觸發背景刷新前的秒數。 |
 | `@agent-status-icons` | `nerd` | `nerd` 用 Nerd Font 圖示（play／hand／pause）；`ascii` 用 `[B]`／`[W]`／`[I]`，供沒有 Nerd Font 的終端使用。 |
 | `@agent-status-format` | `""`（空） | 進階自訂樣板，見[自訂格式](#自訂格式)。空 = 內建版面。 |
+
+`@agent-status-interval` 不是 tmux 原生的 `status-interval`。原生 `status-interval`
+控制狀態列多久重繪一次（也就決定膠囊多久被重新讀取）；`@agent-status-interval`
+只節流背景刷新快取的 pane 掃描。綜合結果：膠囊更新不會快過 `status-interval`，
+pane 每 `@agent-status-interval` 最多重掃一次。
 
 ### `@agent-status-provider`（會執行你提供的指令）
 

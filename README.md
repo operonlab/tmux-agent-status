@@ -14,6 +14,10 @@ panes right now — and which of them need you.
 platform-neutral, but it has only been exercised on macOS. See
 [Compatibility](#compatibility).
 
+![tmux-agent-status status-line capsule counting AI CLIs by state — 2 busy, 1 blocked, 3 idle](docs/screenshot.png)
+
+*The status-line capsule at a glance: busy (working), blocked (waiting on you), and idle (ready) AI-CLI panes, counted live.*
+
 ## What is this?
 
 If you run more than one AI CLI at a time — one crunching a refactor, one

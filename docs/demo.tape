@@ -1,58 +1,57 @@
-# tmux-agent-status demo — recorded with vhs (https://github.com/charmbracelet/vhs)
-#   cd tmux-agent-status && vhs docs/demo.tape
-#
-# Runs in a throwaway, isolated tmux server (-L vhsdemo-agent-status,
-# -f /dev/null) so it never touches your real tmux. To keep the demo
-# self-contained and deterministic it drives the capsule from an inline
-# @agent-status-provider (a fixed JSON count) instead of live panes — the
-# same provider contract documented in the README. The count changes once
-# to show the capsule tracking state.
-
+# tmux-agent-status demo — busy / blocked / idle AI panes at a glance, in a
+# cockpit status bar. Fully self-contained: docs/demo-setup.sh stages an
+# anonymous shell and a catppuccin-mocha ISOLATED tmux server (socket as-demo),
+# then loads the plugin so the #{agent_status} token renders a live capsule from
+# a fixed demo provider (a JSON file). The theme owns status-left AND status-right
+# (the default status-right leaks the hostname); the capsule sits at the tail,
+# behind the clock. The provider file is flipped once, off camera, so the capsule
+# visibly tracks state. No real agent panes are ever scanned.
+# Re-record from the repo root with:  vhs docs/demo.tape
 Output "docs/demo.gif"
+Require tmux
+
 Set Shell "bash"
 Set FontFamily "MesloLGS Nerd Font Mono"
-Set FontSize 15
-Set Width 1200
-Set Height 660
-Set Padding 12
-Set TypingSpeed 40ms
+Set FontSize 20
+Set Width 1600
+Set Height 480
+Set Padding 20
+Set TypingSpeed 35ms
 
 Hide
-Type `tmux -L vhsdemo-agent-status -f /dev/null new-session -d -s demo 'bash --norc -i'`
-Enter
-Type `tmux -L vhsdemo-agent-status attach -t demo`
-Enter
-Sleep 800ms
-Type `PS1='❯ '; clear`
-Enter
-Type `tmux -L vhsdemo-agent-status set -g status-interval 1 \; set -g status-right-length 200`
-Enter
-Type `tmux -L vhsdemo-agent-status set -g @agent-status-interval 1`
-Enter
-Type `tmux -L vhsdemo-agent-status set -g status-right ' AI #{agent_status} '`
-Enter
-Type `tmux -L vhsdemo-agent-status set -g @agent-status-provider "printf '%s' '{\"busy\":2,\"wait\":1,\"idle\":3}'"`
-Enter
-Type `./agent-status.tmux`
-Enter
-Type "clear"
+Type "bash docs/demo-setup.sh"
 Enter
 Sleep 3s
+Type "clear; tmux -L as-demo attach -t demo"
+Enter
+Sleep 2s
 Show
-Type "# tmux-agent-status: busy / blocked / idle AI panes at a glance"
+
+# the cockpit: clock capsule, then the AI capsule — 2 busy, 1 blocked, 3 idle
+Sleep 3s
+Type "# tmux-agent-status: busy / blocked / idle AI panes, at a glance"
 Enter
-Sleep 3.5s
+Sleep 2500ms
+
+# off camera: one agent finished and another is now blocked -> flip the provider
 Hide
-Type `tmux -L vhsdemo-agent-status set -g @agent-status-provider "printf '%s' '{\"busy\":1,\"wait\":2,\"idle\":2}'"`
+Type `printf '%s' '{"busy":1,"wait":2,"idle":2}' > /tmp/vhs-agent-status-demo/counts.json`
 Enter
+Sleep 2500ms
 Type "clear"
 Enter
-Sleep 1.5s
 Show
-Type "# one finished, another is now blocked waiting on you"
+
+# the capsule now reads 1 busy, 2 blocked, 2 idle
+Sleep 1s
+Type "# one finished; another is now blocked, waiting on you"
 Enter
 Sleep 4s
+
 Hide
-Type `tmux -L vhsdemo-agent-status kill-server`
+Ctrl+B
+Type "d"
+Sleep 400ms
+Type "tmux -L as-demo kill-server"
 Enter
 Sleep 500ms

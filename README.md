@@ -45,7 +45,7 @@ Add these two lines to `~/.tmux.conf`:
 
 ```tmux
 set -g status-right ' #{agent_status} %H:%M '
-set -g @plugin 'joneshong/tmux-agent-status'
+set -g @plugin 'operonlab/tmux-agent-status'
 ```
 
 Then reload and install:
@@ -67,7 +67,7 @@ run-shell '~/clones/tmux-agent-status/agent-status.tmux'
 ```
 
 ```sh
-git clone https://github.com/joneshong/tmux-agent-status ~/clones/tmux-agent-status
+git clone https://github.com/operonlab/tmux-agent-status ~/clones/tmux-agent-status
 tmux source-file ~/.tmux.conf
 ```
 

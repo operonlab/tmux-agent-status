@@ -36,7 +36,7 @@ Gemini、Aider 等）正在你的 pane 裡跑，以及哪一個正在等你。
 
 ```tmux
 set -g status-right ' #{agent_status} %H:%M '
-set -g @plugin 'joneshong/tmux-agent-status'
+set -g @plugin 'operonlab/tmux-agent-status'
 ```
 
 接著重新載入設定：
@@ -57,7 +57,7 @@ run-shell '~/clones/tmux-agent-status/agent-status.tmux'
 ```
 
 ```sh
-git clone https://github.com/joneshong/tmux-agent-status ~/clones/tmux-agent-status
+git clone https://github.com/operonlab/tmux-agent-status ~/clones/tmux-agent-status
 tmux source-file ~/.tmux.conf
 ```
 

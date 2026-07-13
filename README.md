@@ -83,7 +83,7 @@ you decide the capsule appears.
 
 ## Demo
 
-*Demo GIF coming soon.*
+![tmux-agent-status demo](docs/demo.gif)
 
 A busy Claude pane, a Codex pane blocked on a permission prompt, and an idle
 Gemini pane render (with the default Nerd Font icons) as roughly:

@@ -72,7 +72,7 @@ tmux source-file ~/.tmux.conf
 
 ## Demo
 
-*Demo GIF coming soon.*
+![tmux-agent-status demo](demo.gif)
 
 一個忙碌的 Claude pane、一個卡在權限詢問的 Codex pane、一個閒置的 Gemini pane，
 用預設 Nerd Font 圖示大致會呈現成：

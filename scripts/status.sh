@@ -31,6 +31,7 @@ TMUX_BIN="${TMUX_BIN:-$(command -v tmux 2>/dev/null || echo tmux)}"
 STATE_DIR="${TMUX_TMPDIR:-/tmp}/tmux-agent-status-$(/usr/bin/id -u 2>/dev/null || echo 0)"
 CACHE="${STATE_DIR}/status.txt"
 LOCK="${STATE_DIR}/refresh.lock"
+SIGFILE="${STATE_DIR}/situation.sig"
 
 # ── option reader (bound to TMUX_BIN so isolated tests read the right server) ──
 opt() {
@@ -54,8 +55,16 @@ classify_one() {
 # — macOS /bin/sh is bash 3.2 and its $() parser mis-reads a `case` inside a
 # command substitution as a syntax error. Kept as a plain for-loop on purpose.
 local_scan() {
+	# Test seam (mirrors the __refresh__ / TMUX_BIN seams already used by the
+	# suite): when AISTATUS_SCAN_COUNTER names a file we append a byte each time
+	# the expensive capture+classify pass actually runs, so a test can prove the
+	# debounce short-circuit skipped it without resorting to timing.
+	[ -n "${AISTATUS_SCAN_COUNTER:-}" ] && printf 'x' >> "$AISTATUS_SCAN_COUNTER" 2>/dev/null
 	scan_busy=0; scan_wait=0; scan_idle=0
-	panes=$("$TMUX_BIN" list-panes -a -F "#{pane_id}${TAB}#{pane_current_command}${TAB}#{pane_title}" 2>/dev/null) || return
+	# A failed list-panes (tmux gone / unreachable) returns non-zero so the
+	# caller can tell a genuine "no agents => 0" apart from a probe failure and
+	# keep the last-good capsule instead of blanking it (fail-soft).
+	panes=$("$TMUX_BIN" list-panes -a -F "#{pane_id}${TAB}#{pane_current_command}${TAB}#{pane_title}" 2>/dev/null) || return 1
 	OLDIFS=$IFS
 	IFS='
 '
@@ -79,6 +88,7 @@ local_scan() {
 		elif [ "$v" = IDLE ]; then scan_idle=$((scan_idle + 1)); fi
 	done
 	IFS=$OLDIFS
+	return 0
 }
 
 # ── provider: a user-configured external command (see @agent-status-provider) ──
@@ -140,29 +150,85 @@ render() {
 	printf '%s' "$val"
 }
 
+# ── family execution-discipline template (borrowed & source-verified from
+#    ndom91/tmux-ai-window-name) ────────────────────────────────────────────
+# Model-agnostic plumbing for "don't block tmux redraws, don't recompute
+# needlessly". This plugin already carries most of the recipe: the expensive
+# scan runs OFF the redraw path (status `#()` reads a cache; refresh_async spawns
+# a fully-detached, single-flighted background refresh) and each pane is probed
+# by its explicit #{pane_id} (no pane-switch race). The two pieces added here:
+#
+#   DEBOUNCE  — situation_signature() hashes everything the capsule depends on
+#               (each pane's id/command/path/title + the icon/format options),
+#               deliberately excluding size/cursor so a redraw or resize never
+#               invalidates it. When the signature is unchanged we serve the
+#               last-good cache and skip the whole capture+classify pass.
+#   FAIL-SOFT — a failed probe (tmux gone, provider timeout) keeps the last-good
+#               capsule; we only overwrite the cache on a real result, so a
+#               transient error can never blank the status line. (The hard
+#               timeout that stops a wedged probe from freezing tmux already
+#               lives in run_provider + the detached, lock-guarded refresh_async.)
+
+# situation_signature: cheap, stable hash of the current situation. Empty when a
+# provider is configured (its output is not a pane situation, so it is never
+# debounced) or when tmux is unreachable (which disables the short-circuit and
+# lets fail-soft keep the last-good value).
+# ponytail: hashes ALL panes, not only agent panes — a churning non-agent pane
+# (e.g. a scrolling log) can still force a recompute; narrow it to the agent
+# command set if that ever shows up as measurable needless refreshes.
+situation_signature() {
+	[ -n "$(opt "@agent-status-provider" "")" ] && return 0
+	rows=$("$TMUX_BIN" list-panes -a \
+		-F "#{pane_id}${TAB}#{pane_current_command}${TAB}#{pane_current_path}${TAB}#{pane_title}" \
+		2>/dev/null) || return 0
+	printf '%s\n%s\n%s' \
+		"$(opt "@agent-status-icons" "nerd")" \
+		"$(opt "@agent-status-format" "")" \
+		"$rows" | /usr/bin/cksum 2>/dev/null | /usr/bin/awk '{print $1"-"$2}'
+}
+
 # refresh_now: gather counts (provider first, else local scan) and atomically
 # rewrite the cache. Runs in the detached refresh subshell (or the __refresh__
-# test seam).
+# test seam). Debounced and fail-soft per the template note above.
 refresh_now() {
-	busy=0; waiting=0; idle=0
+	busy=0; waiting=0; idle=0; have_result=0
 	provider=$(opt "@agent-status-provider" "")
-	got=0
 	if [ -n "$provider" ]; then
 		json=$(run_provider "$provider")
 		if [ -n "$json" ]; then
 			IFS=' ' read -r busy waiting idle <<EOF
 $(parse_counts "$json")
 EOF
-			got=1
+			have_result=1
 		fi
 	fi
-	if [ "$got" -eq 0 ]; then
-		local_scan
-		busy=$scan_busy; waiting=$scan_wait; idle=$scan_idle
+
+	# DEBOUNCE: on the local path, short-circuit when the situation is unchanged.
+	sig=''
+	if [ "$have_result" -eq 0 ] && [ -z "$provider" ]; then
+		sig=$(situation_signature)
+		if [ -n "$sig" ] && [ -f "$CACHE" ] && [ "$sig" = "$(/bin/cat "$SIGFILE" 2>/dev/null)" ]; then
+			return 0
+		fi
+	fi
+
+	if [ "$have_result" -eq 0 ]; then
+		if local_scan; then
+			busy=$scan_busy; waiting=$scan_wait; idle=$scan_idle; have_result=1
+		fi
+	fi
+
+	# FAIL-SOFT: no real result (probe failed) -> keep the last-good cache.
+	if [ "$have_result" -eq 0 ]; then
+		return 0
 	fi
 
 	out=$(render "$busy" "$waiting" "$idle")
 	printf '%s' "$out" > "${CACHE}.new" 2>/dev/null && /bin/mv "${CACHE}.new" "$CACHE" 2>/dev/null
+	# Record the situation only after a successful local recompute.
+	if [ -n "$sig" ]; then
+		printf '%s' "$sig" > "${SIGFILE}.new" 2>/dev/null && /bin/mv "${SIGFILE}.new" "$SIGFILE" 2>/dev/null
+	fi
 }
 
 ensure_state_dir() {
